@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://s3elite.onrender.com/api/$1"
+      "destination": "https://s3elite-pg-final.onrender.com/api/$1"
     },
     {
       "source": "/socket.io/(.*)",
-      "destination": "https://s3elite.onrender.com/socket.io/$1"
+      "destination": "https://s3elite-pg-final.onrender.com/socket.io/$1"
     },
     {
       "source": "/(.*)",
