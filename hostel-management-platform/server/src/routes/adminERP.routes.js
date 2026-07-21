@@ -718,6 +718,24 @@ router.put('/booking-requests/:id/approve', async (req, res) => {
     bed.duration = request.stayDuration || '11 Months';
     await bed.save();
 
+    // Automatically record approved payment in Payment collection
+    try {
+      await Payment.create({
+        studentName: request.name,
+        roomNumber: request.preferredRoom,
+        bedNumber: request.preferredBed,
+        amount: request.roomRent || bed.rentPerBed || 5500,
+        paymentType: 'Advance / Security Deposit',
+        transactionId: request.utrNumber,
+        utrNumber: request.utrNumber,
+        paymentScreenshot: request.paymentScreenshot,
+        status: 'Approved',
+        verifiedAt: new Date()
+      });
+    } catch (payErr) {
+      console.error('Error creating payment record during booking approval:', payErr);
+    }
+
     emitSocketEvent(req, 'STUDENT_ADMITTED', { bedId: bed._id, studentName: request.name });
 
     return res.status(200).json({ success: true, message: 'Booking approved' });
