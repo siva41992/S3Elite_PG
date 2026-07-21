@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://s3elite:siva123@ac-ydwytth-shard-00-00.ldgdibt.mongodb.net:27017,ac-ydwytth-shard-00-01.ldgdibt.mongodb.net:27017,ac-ydwytth-shard-00-02.ldgdibt.mongodb.net:27017/smart_hostel_db?ssl=true&replicaSet=atlas-nxxd63-shard-0&authSource=admin&appName=Cluster0';
+    const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://s3elite:siva123@ac-ydwytth-shard-00-00.ldgdibt.mongodb.net:27017,ac-ydwytth-shard-00-01.ldgdibt.mongodb.net:27017,ac-ydwytth-shard-00-02.ldgdibt.mongodb.net:27017/smart_hostel_db?ssl=true&replicaSet=atlas-nxxd63-shard-0&authSource=admin&appName=Cluster0';
     const conn = await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 5000
     });

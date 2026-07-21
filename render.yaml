@@ -11,11 +11,13 @@ services:
         value: 10000
       - key: NODE_ENV
         value: production
-      # NOTE: You will need to add these secret environment variables directly in the Render Dashboard
-      - key: MONGO_URI
+      # Secret environment variables (Set these in Render Dashboard)
+      - key: MONGODB_URI
         sync: false 
       - key: JWT_SECRET
         sync: false 
+      - key: CLIENT_URL
+        sync: false
         
   # Frontend Client
   - type: web
