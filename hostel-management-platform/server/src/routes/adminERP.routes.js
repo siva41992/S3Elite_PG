@@ -375,7 +375,18 @@ router.get('/matrix', async (req, res) => {
   try {
     await ensureSeedMatrix();
     const beds = await Bed.find().sort({ roomNumber: 1, bedNumber: 1 });
-    return res.status(200).json({ success: true, data: beds });
+    
+    // Deduplicate by roomNumber and bedNumber to strictly guarantee no duplicate cot cards render on Admin side
+    const uniqueBedsMap = new Map();
+    beds.forEach(bed => {
+      const key = `${bed.roomNumber}_${bed.bedNumber}`;
+      if (!uniqueBedsMap.has(key)) {
+        uniqueBedsMap.set(key, bed);
+      }
+    });
+
+    const uniqueBeds = Array.from(uniqueBedsMap.values());
+    return res.status(200).json({ success: true, data: uniqueBeds });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
