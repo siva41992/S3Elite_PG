@@ -175,7 +175,9 @@ const AuthPage = ({ selectedRoomCot = null, onCancel }) => {
     } catch (err) {}
 
     // 4. Notify all real-time listeners across tabs and show SUCCESS screen directly
-    realtimeBus.notify();
+    try {
+      realtimeBus.emit('BOOKING_REQUEST', bookingPayload);
+    } catch (rErr) {}
     setBookingSuccess(true);
     setIsSubmitting(false);
   };

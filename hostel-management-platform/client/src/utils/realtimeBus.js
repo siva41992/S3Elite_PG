@@ -65,6 +65,10 @@ class RealtimeBus {
     this.notifyListeners(packet);
   }
 
+  notify(data = {}) {
+    this.emit('ERP_REALTIME_UPDATE', data);
+  }
+
   resetFreshWebsite() {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('s3elite_admin_matrix_beds');
