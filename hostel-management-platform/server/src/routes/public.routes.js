@@ -326,11 +326,23 @@ router.post('/booking-request', async (req, res) => {
       });
     }
 
-    if (bed.occupied || bed.reservationStatus !== 'Available') {
-      return res.status(400).json({ success: false, message: `Bed is currently ${bed.reservationStatus}` });
+    // Check if bed is occupied or under maintenance
+    if (bed.occupied || bed.reservationStatus === 'Occupied') {
+      return res.status(400).json({ success: false, message: 'This bed is currently occupied by a resident.' });
+    }
+
+    if (bed.reservationStatus === 'Maintenance') {
+      return res.status(400).json({ success: false, message: 'This bed is currently under maintenance.' });
     }
 
     const applicationId = `S3PG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    // Parse date safely
+    let parsedJoiningDate = Date.now();
+    if (expectedJoiningDate) {
+      const d = new Date(expectedJoiningDate);
+      if (!isNaN(d.getTime())) parsedJoiningDate = d;
+    }
 
     // Create the booking request
     const bookingReq = await BookingRequest.create({
@@ -346,10 +358,10 @@ router.post('/booking-request', async (req, res) => {
       collegeCompany,
       emergencyContact,
       aadhaar,
-      expectedJoiningDate,
+      expectedJoiningDate: parsedJoiningDate,
       stayDuration,
       preferredRoom,
-      preferredBed,
+      preferredBed: Number(preferredBed),
       utrNumber,
       paymentScreenshot,
       paymentStatus: 'Pending Verification',
@@ -378,7 +390,7 @@ router.post('/booking-request', async (req, res) => {
     });
   } catch (err) {
     console.error('Error submitting booking request:', err);
-    return res.status(500).json({ success: false, message: 'Failed to submit booking request' });
+    return res.status(500).json({ success: false, message: err.message || 'Failed to submit booking request' });
   }
 });
 
