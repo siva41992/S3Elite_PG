@@ -100,6 +100,7 @@ const AuthPage = ({ selectedRoomCot = null, onCancel }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError('');
     
     if (!selectedRoomCot) {
@@ -123,13 +124,35 @@ const AuthPage = ({ selectedRoomCot = null, onCancel }) => {
       });
       
       const json = await res.json();
-      if (res.ok && json.success) {
+      if ((res.ok && json.success) || json.success) {
         realtimeBus.notify();
         setBookingSuccess(true);
+      } else if (json.message && json.message.includes('Reserved')) {
+        // Double check if user's booking request was already created in database
+        try {
+          const vRes = await fetch(`/api/public/verify-booking?room=${selectedRoomCot.room}&bed=${selectedRoomCot.cot}&utr=${utrNumber}`);
+          const vJson = await vRes.json();
+          if (vJson.success && vJson.found) {
+            realtimeBus.notify();
+            setBookingSuccess(true);
+            return;
+          }
+        } catch (vErr) {}
+        setError(json.message || 'Booking failed. Bed might no longer be available.');
       } else {
         setError(json.message || 'Booking failed. Bed might no longer be available.');
       }
     } catch (err) {
+      // On network exception, check if backend created the booking request before network drop
+      try {
+        const vRes = await fetch(`/api/public/verify-booking?room=${selectedRoomCot.room}&bed=${selectedRoomCot.cot}&utr=${utrNumber}`);
+        const vJson = await vRes.json();
+        if (vJson.success && vJson.found) {
+          realtimeBus.notify();
+          setBookingSuccess(true);
+          return;
+        }
+      } catch (vErr) {}
       setError('Network error. Please try again.');
     } finally {
       setIsSubmitting(false);

@@ -259,6 +259,36 @@ router.get('/room/:id', async (req, res) => {
 });
 
 /**
+ * GET /api/public/verify-booking
+ * Check if a booking request exists for a specific room, bed, and optional UTR/phone
+ */
+router.get('/verify-booking', async (req, res) => {
+  try {
+    const { room, bed, utr, phone } = req.query;
+    if (!room || bed == null) {
+      return res.status(400).json({ success: false, message: 'Missing room or bed' });
+    }
+
+    const filter = { preferredRoom: room, preferredBed: Number(bed) };
+    if (utr) filter.utrNumber = utr;
+    else if (phone) filter.phone = phone;
+
+    const existingReq = await BookingRequest.findOne(filter).sort({ createdAt: -1 });
+    if (existingReq) {
+      return res.status(200).json({
+        success: true,
+        found: true,
+        data: existingReq
+      });
+    }
+
+    return res.status(200).json({ success: true, found: false });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
  * POST /api/public/booking-request
  * Create a new booking request for a bed
  */
@@ -274,10 +304,26 @@ router.post('/booking-request', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Valid 12-digit UTR Number and Payment Screenshot are required.' });
     }
 
-    // Check if bed is still available
+    // Check if bed exists
     const bed = await Bed.findOne({ roomNumber: preferredRoom, bedNumber: preferredBed });
     if (!bed) {
       return res.status(404).json({ success: false, message: 'Bed not found' });
+    }
+
+    // Check if a booking request for this exact bed and user/UTR was already placed (e.g. fast duplicate submit or retry)
+    const existingReq = await BookingRequest.findOne({
+      preferredRoom,
+      preferredBed: Number(preferredBed),
+      $or: [{ utrNumber }, { phone }, { email }]
+    }).sort({ createdAt: -1 });
+
+    if (existingReq) {
+      // Bed was reserved by this user's booking request - return success
+      return res.status(200).json({
+        success: true,
+        message: 'Booking request submitted successfully',
+        data: existingReq
+      });
     }
 
     if (bed.occupied || bed.reservationStatus !== 'Available') {
