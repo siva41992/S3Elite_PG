@@ -155,9 +155,22 @@ const OwnerDashboard = () => {
         if (payJson.success && Array.isArray(payJson.data)) setPayments(payJson.data);
       }
       
+      let serverBookings = [];
       if (bookRes.ok) {
         const bookJson = await bookRes.json();
-        if (bookJson.success && Array.isArray(bookJson.data)) setBookingRequests(bookJson.data);
+        if (bookJson.success && Array.isArray(bookJson.data)) serverBookings = bookJson.data;
+      }
+      try {
+        const offlineBookings = JSON.parse(localStorage.getItem('s3elite_offline_bookings') || '[]');
+        const combined = [...serverBookings];
+        offlineBookings.forEach(off => {
+          if (!combined.some(b => b.utrNumber === off.utrNumber || b.applicationId === off.applicationId)) {
+            combined.unshift(off);
+          }
+        });
+        setBookingRequests(combined);
+      } catch (e) {
+        setBookingRequests(serverBookings);
       }
 
       if (rentRes && rentRes.ok) {

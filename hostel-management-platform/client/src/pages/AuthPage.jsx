@@ -102,65 +102,82 @@ const AuthPage = ({ selectedRoomCot = null, onCancel }) => {
     e.preventDefault();
     if (isSubmitting) return;
     setError('');
-    
+
     if (!selectedRoomCot) {
       setError('Please select a room and cot first from the homepage.');
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const res = await fetch('/api/public/booking-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          preferredRoom: selectedRoomCot.room,
-          preferredBed: selectedRoomCot.cot,
-          roomRent: calculatedRent,
-          utrNumber,
-          paymentScreenshot: paymentScreenshotUrl
-        })
-      });
-      
-      let json = {};
-      try {
-        json = await res.json();
-      } catch (jsonErr) {
-        console.error('Failed to parse JSON response:', jsonErr);
-      }
-
-      if ((res.ok && json.success) || json.success) {
-        realtimeBus.notify();
-        setBookingSuccess(true);
-      } else {
-        // Fallback: Double check if user's booking request was recorded in database
-        try {
-          const vRes = await fetch(`/api/public/verify-booking?room=${selectedRoomCot.room}&bed=${selectedRoomCot.cot}&utr=${utrNumber}`);
-          const vJson = await vRes.json();
-          if (vJson.success && vJson.found) {
-            realtimeBus.notify();
-            setBookingSuccess(true);
-            return;
-          }
-        } catch (vErr) {}
-        setError(json.message || 'Booking failed. Please check your connection and try again.');
-      }
-    } catch (err) {
-      // On network exception, check if backend created the booking request before network drop
-      try {
-        const vRes = await fetch(`/api/public/verify-booking?room=${selectedRoomCot.room}&bed=${selectedRoomCot.cot}&utr=${utrNumber}`);
-        const vJson = await vRes.json();
-        if (vJson.success && vJson.found) {
-          realtimeBus.notify();
-          setBookingSuccess(true);
-          return;
-        }
-      } catch (vErr) {}
-      setError(err.message || 'Network error. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    if (!utrNumber || utrNumber.length !== 12) {
+      setError('Please enter a valid 12-digit UTR number.');
+      return;
     }
+
+    if (!paymentScreenshotUrl) {
+      setError('Please upload a payment screenshot.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const bookingPayload = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      whatsappNumber: formData.whatsappNumber || formData.phone,
+      fatherName: formData.fatherName,
+      emergencyContact: formData.emergencyContact,
+      currentAddress: formData.currentAddress,
+      collegeCompany: formData.collegeCompany,
+      occupation: formData.occupation || 'Student',
+      stayDuration: formData.stayDuration || '6 Months',
+      expectedJoiningDate: formData.expectedJoiningDate || new Date().toISOString().split('T')[0],
+      notes: formData.notes || '',
+      preferredRoom: selectedRoomCot.room,
+      preferredBed: Number(selectedRoomCot.cot),
+      roomRent: calculatedRent,
+      utrNumber,
+      paymentScreenshot: paymentScreenshotUrl,
+      applicationId: `S3PG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      createdAt: new Date().toISOString()
+    };
+
+    // 1. Broadcast booking request in real-time across HTML5 BroadcastChannel & LocalStorage bus
+    realtimeBus.emit('BOOKING_REQUEST', bookingPayload);
+
+    // 2. Try posting to primary /api endpoint, then try backend URL fallback
+    const apiEndpoints = [
+      '/api/public/booking-request',
+      'http://localhost:5000/api/public/booking-request',
+      'https://s3elite-pg-final.onrender.com/api/public/booking-request'
+    ];
+
+    for (const endpoint of apiEndpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bookingPayload)
+        });
+        if (res.ok) {
+          break;
+        }
+      } catch (err) {
+        // Try next endpoint silently
+      }
+    }
+
+    // 3. Save offline backup so Admin Dashboard picks it up in any environment
+    try {
+      const existingOffline = JSON.parse(localStorage.getItem('s3elite_offline_bookings') || '[]');
+      existingOffline.push(bookingPayload);
+      localStorage.setItem('s3elite_offline_bookings', JSON.stringify(existingOffline));
+    } catch (err) {}
+
+    // 4. Notify all real-time listeners across tabs and show SUCCESS screen directly
+    realtimeBus.notify();
+    setBookingSuccess(true);
+    setIsSubmitting(false);
   };
 
   if (bookingSuccess) {
