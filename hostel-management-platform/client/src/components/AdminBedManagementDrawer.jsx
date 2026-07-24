@@ -3,7 +3,7 @@ import {
   X, User, Phone, Mail, Calendar, DollarSign, FileText,
   CheckCircle, AlertCircle, Edit3, RefreshCw, MessageSquare,
   Send, Download, Upload, Clock, Building, Briefcase, Shield,
-  Save, AlertTriangle, UserCheck, Smartphone, MapPin, Activity, BedDouble, Utensils
+  Save, AlertTriangle, UserCheck, Smartphone, MapPin, Activity, BedDouble
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -465,58 +465,7 @@ const AdminBedManagementDrawer = ({ bedId, onClose, onBedUpdated }) => {
                 </div>
               </div>
 
-              {/* Monthly Mess (PG Resident) */}
-              <div>
-                <h3 className="text-xs font-black text-amber-500 uppercase tracking-widest mb-4 flex items-center gap-2"><Utensils className="w-4 h-4" /> Monthly Mess Subscription</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="bg-amber-500/10 p-3 rounded-lg border border-amber-500/30">
-                    <p className="text-[10px] text-amber-400 uppercase font-bold">Status</p>
-                    {isEditing ? (
-                      <div className="flex items-center gap-2 mt-2">
-                        <label className="text-xs font-bold text-textDark flex items-center gap-1 cursor-pointer">
-                          <input type="checkbox" name="messEnabled" checked={formData.messEnabled || false} onChange={handleInputChange} className="accent-amber-500 w-4 h-4" />
-                          Enabled
-                        </label>
-                      </div>
-                    ) : (
-                      <p className="text-xs font-bold mt-1">
-                        {bedData.messEnabled ? <span className="text-emerald-400">Enabled</span> : <span className="text-textMuted">Disabled</span>}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="bg-slate-50 p-3 rounded-lg border border-borderLight">
-                    <p className="text-[10px] text-textMuted uppercase font-bold">Mess Charges (₹)</p>
-                    {isEditing ? (
-                      <input type="number" name="messCharges" value={formData.messCharges || ''} onChange={handleInputChange} className="w-full mt-1 bg-slate-100 text-textDark text-xs p-1 rounded" disabled={!formData.messEnabled} />
-                    ) : (
-                      <p className="text-xs font-bold text-textDark mt-1">₹{bedData.messCharges || 2500}</p>
-                    )}
-                  </div>
-                  
-                  <div className="bg-slate-50 p-3 rounded-lg border border-borderLight">
-                    <p className="text-[10px] text-textMuted uppercase font-bold">Start Date</p>
-                    {isEditing ? (
-                      <input type="date" name="messStartDate" value={formData.messStartDate || ''} onChange={handleInputChange} className="w-full mt-1 bg-slate-100 text-textDark text-xs p-1 rounded" disabled={!formData.messEnabled} />
-                    ) : (
-                      <p className="text-xs font-bold text-textDark mt-1">
-                        {bedData.messStartDate ? new Date(bedData.messStartDate).toLocaleDateString() : 'N/A'}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="bg-slate-50 p-3 rounded-lg border border-borderLight">
-                    <p className="text-[10px] text-textMuted uppercase font-bold">Renewal Date</p>
-                    {isEditing ? (
-                      <input type="date" name="messRenewalDate" value={formData.messRenewalDate || ''} onChange={handleInputChange} className="w-full mt-1 bg-slate-100 text-textDark text-xs p-1 rounded" disabled={!formData.messEnabled} />
-                    ) : (
-                      <p className="text-xs font-bold text-textDark mt-1">
-                        {bedData.messRenewalDate ? new Date(bedData.messRenewalDate).toLocaleDateString() : 'N/A'}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
+
 
             </div>
           )}
